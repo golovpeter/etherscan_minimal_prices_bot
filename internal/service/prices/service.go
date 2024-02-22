@@ -2,7 +2,7 @@ package prices
 
 import (
 	"encoding/json"
-	"etherscan_gastracker/common"
+	"etherscan_gastracker/internal/common"
 	"etherscan_gastracker/internal/repository/prices"
 	"io"
 	"math"
