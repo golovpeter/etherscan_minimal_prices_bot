@@ -49,7 +49,7 @@ func main() {
 		case "get_prices":
 			getPricesHandler.GetDayPrices(bot, &get_day_prices.GetDayPricesIn{
 				UserID: update.Message.Chat.ID,
-				ApiKey: APIKEY,
+				ApiKey: os.Getenv("API_KEY"),
 			})
 		}
 	}
