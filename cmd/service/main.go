@@ -11,13 +11,20 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var (
+	BotToken   = os.Getenv("BOT_TOKEN")
+	WebhookUrl = os.Getenv("WEBHOOK_URL")
+	ApiKey     = os.Getenv("API_KEY")
+	Port       = os.Getenv("PORT")
+)
+
 func main() {
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
+	bot, err := tgbotapi.NewBotAPI(BotToken)
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	wh, err := tgbotapi.NewWebhook(os.Getenv("WEBHOOK_URL"))
+	wh, err := tgbotapi.NewWebhook(WebhookUrl)
 	if err != nil {
 		log.Fatalf("NewWebhook failed: %s", err)
 
@@ -30,10 +37,15 @@ func main() {
 
 	updates := bot.ListenForWebhook("/")
 
-	port := os.Getenv("PORT")
+	port := Port
 	if port == "" {
 		port = "8080"
 	}
+
+	http.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+		writer.Write([]byte("OK"))
+	})
 
 	go func() {
 		err = http.ListenAndServe(":"+port, nil)
@@ -46,7 +58,7 @@ func main() {
 
 	getPricesService := prices.NewService(pricesRepository)
 
-	errCh := getPricesService.GetNewPrices(os.Getenv("API_KEY"))
+	errCh := getPricesService.GetNewPrices(ApiKey)
 	go func() {
 		<-errCh
 		log.Println(err)
@@ -66,8 +78,13 @@ func main() {
 		case "get_prices":
 			getPricesHandler.GetDayPrices(bot, &get_day_prices.GetDayPricesIn{
 				UserID: update.Message.Chat.ID,
-				ApiKey: os.Getenv("API_KEY"),
+				ApiKey: ApiKey,
 			})
+		default:
+			_, err = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Такого я не понимаю!"))
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 	}
 }
