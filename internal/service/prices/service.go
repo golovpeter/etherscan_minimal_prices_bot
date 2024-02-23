@@ -46,7 +46,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 		for {
 			hour, _, _ := time.Now().In(loc).Clock()
 
-			if hour != prevHour {
+			if hour != prevHour && curMinimalPrice != math.MaxInt32 {
 				err = s.repository.UpdatePrices(hour, &prices.UpdatePricesIn{
 					MinimalPriceInHour: curMinimalPrice,
 				})
