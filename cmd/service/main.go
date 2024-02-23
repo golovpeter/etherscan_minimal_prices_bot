@@ -5,9 +5,10 @@ import (
 	pricesRepo "etherscan_gastracker/internal/repository/prices"
 	"etherscan_gastracker/internal/service/prices"
 	"log"
+	"net/http"
 	"os"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func main() {
@@ -16,14 +17,30 @@ func main() {
 		log.Panicln(err)
 	}
 
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates, err := bot.GetUpdatesChan(u)
+	wh, err := tgbotapi.NewWebhook(os.Getenv("WEBHOOK_URL"))
 	if err != nil {
-		log.Println(err)
-		return
+		log.Fatalf("NewWebhook failed: %s", err)
+
 	}
+
+	_, err = bot.Request(wh)
+	if err != nil {
+		log.Fatalf("SetWebhook failed: %s", err)
+	}
+
+	updates := bot.ListenForWebhook("/")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	go func() {
+		err = http.ListenAndServe(":"+port, nil)
+		if err != nil {
+			log.Fatalln("http err:", err)
+		}
+	}()
 
 	pricesRepository := pricesRepo.NewRepository()
 
