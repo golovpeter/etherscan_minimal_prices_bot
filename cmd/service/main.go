@@ -11,6 +11,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var numericKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton("/get_prices"),
+	),
+)
+
 var (
 	BotToken   = os.Getenv("BOT_TOKEN")
 	WebhookUrl = os.Getenv("WEBHOOK_URL")
@@ -75,14 +81,20 @@ func main() {
 		command := update.Message.Command()
 
 		switch command {
+		case "start":
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет! Команда /get_prices позволит тебе получить минимальные цена на газ!")
+			msg.ReplyMarkup = numericKeyboard
+
+			if _, err = bot.Send(msg); err != nil {
+				log.Fatalln(err)
+			}
 		case "get_prices":
 			getPricesHandler.GetDayPrices(bot, &get_day_prices.GetDayPricesIn{
 				UserID: update.Message.Chat.ID,
 				ApiKey: ApiKey,
 			})
 		default:
-			_, err = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Такого я не понимаю!"))
-			if err != nil {
+			if _, err = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Такого я не понимаю!")); err != nil {
 				log.Fatalln(err)
 			}
 		}
