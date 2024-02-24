@@ -7,10 +7,13 @@ type GetPricesIn struct {
 }
 
 type Result struct {
-	LastBlock       string `json:"LastBlock"`
 	SafeGasPrice    string `json:"SafeGasPrice"`
 	ProposeGasPrice string `json:"ProposeGasPrice"`
 	FastGasPrice    string `json:"FastGasPrice"`
-	SuggestBaseFee  string `json:"suggestBaseFee"`
-	GasUsedRatio    string `json:"gasUsedRatio"`
+}
+
+type CurPrices struct {
+	SafeGasPrice    int
+	ProposeGasPrice int
+	FastGasPrice    int
 }

@@ -1,4 +1,4 @@
-package get_day_prices
+package get_current_prices
 
 import (
 	"etherscan_gastracker/internal/service/prices"
@@ -8,8 +8,6 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
-
-const hoursInDay = 23
 
 type handler struct {
 	service  prices.GetPricesService
@@ -26,26 +24,19 @@ func NewHandler(
 	}
 }
 
-func (h *handler) GetDayPrices(bot *tgbotapi.BotAPI, data *GetDayPricesIn) {
-	allPrices, err := h.service.GetAllPrices()
+func (h *handler) GetCurrentPrices(bot *tgbotapi.BotAPI, data *GetCurrentPricesIn) {
+	curPrices, err := h.service.GetCurrentPrices()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	currentTime := time.Now().In(h.location).Format("02-01-2006")
-	message := fmt.Sprintf(
-		"Minimal Prices per hours on %s\n\n",
-		currentTime,
-	)
-
-	for i := 0; i <= hoursInDay; i++ {
-		if i < 10 {
-			message += "0"
-		}
-
-		message += fmt.Sprintf("%d: %d\n", i, allPrices[i])
-	}
+	nowTime := time.Now().In(h.location).Format("02-01-2006 15:04:05")
+	message := fmt.Sprintf("Current gwei on %s.\nLow: %d, Average: %d, High: %d",
+		nowTime,
+		curPrices.SafeGasPrice,
+		curPrices.ProposeGasPrice,
+		curPrices.FastGasPrice)
 
 	if _, err = bot.Send(tgbotapi.NewMessage(data.UserID, message)); err != nil {
 		log.Println(err)

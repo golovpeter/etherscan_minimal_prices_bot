@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"etherscan_gastracker/internal/common"
 	"etherscan_gastracker/internal/repository/prices"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -16,38 +17,62 @@ const (
 )
 
 type service struct {
+	location   *time.Location
 	repository prices.Repository
 }
 
-func NewService(repository prices.Repository) GetPricesService {
+func NewService(
+	repository prices.Repository,
+	location *time.Location,
+) GetPricesService {
 	return &service{
 		repository: repository,
+		location:   location,
 	}
 }
 
-func (s *service) GetCurrentPrices() (map[int]int, error) {
+func (s *service) GetAllPrices() (map[int]int, error) {
 	return s.repository.GetAllPrices()
 }
 
-func (s *service) GetNewPrices(apiKey string) chan error {
-	errCh := make(chan error)
-
-	loc, err := time.LoadLocation("Europe/Moscow")
+func (s *service) GetCurrentPrices() (*CurPrices, error) {
+	curPrices, err := s.repository.GetCurrentPrices()
 	if err != nil {
-		errCh <- err
-		return errCh
+		return nil, err
 	}
+
+	return &CurPrices{
+		SafeGasPrice:    curPrices.SafeGasPrice,
+		ProposeGasPrice: curPrices.ProposeGasPrice,
+		FastGasPrice:    curPrices.FastGasPrice,
+	}, nil
+}
+
+func (s *service) GetNewPrices(apiKey string) chan error {
+	cleared := false
+	errCh := make(chan error)
 
 	curMinimalPrice := math.MaxInt32
 	ticker := time.NewTicker(tickTime)
-	prevHour := time.Now().In(loc).Hour()
+	prevHour := time.Now().In(s.location).Hour()
 
 	go func() {
 		for {
-			hour, _, _ := time.Now().In(loc).Clock()
+			hour, _, _ := time.Now().In(s.location).Clock()
+
+			if hour == 1 && cleared == false {
+				err := s.repository.ClearData()
+				if err != nil {
+					errCh <- err
+					return
+				}
+
+				fmt.Println("cleared")
+				cleared = true
+			}
 
 			if hour != prevHour {
-				err = s.repository.UpdatePrices(hour, &prices.UpdatePricesIn{
+				err := s.repository.UpdatePrices(hour, &prices.UpdatePricesIn{
 					MinimalPriceInHour: curMinimalPrice,
 				})
 				if err != nil {
@@ -57,6 +82,10 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 
 				prevHour = hour
 				curMinimalPrice = math.MaxInt32
+
+				if cleared {
+					cleared = false
+				}
 			}
 
 			select {
@@ -72,6 +101,16 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 					reqPrices.ProposeGasPrice,
 					reqPrices.FastGasPrice,
 				)
+				if err != nil {
+					errCh <- err
+					return
+				}
+
+				err = s.repository.UpdateCurrentPrices(&prices.CurPrices{
+					SafeGasPrice:    curPrices.SafeGasPrice,
+					ProposeGasPrice: curPrices.ProposeGasPrice,
+					FastGasPrice:    curPrices.FastGasPrice,
+				})
 				if err != nil {
 					errCh <- err
 					return
@@ -110,11 +149,8 @@ func getRequest(apiKey string) (*Result, error) {
 	result := in.Result
 
 	return &Result{
-		LastBlock:       result.LastBlock,
 		SafeGasPrice:    result.SafeGasPrice,
 		ProposeGasPrice: result.ProposeGasPrice,
 		FastGasPrice:    result.FastGasPrice,
-		SuggestBaseFee:  result.SuggestBaseFee,
-		GasUsedRatio:    result.GasUsedRatio,
 	}, nil
 }
