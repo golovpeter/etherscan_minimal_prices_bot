@@ -80,7 +80,7 @@ func main() {
 		command := update.Message.Text
 		switch command {
 		case "/start":
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет! Команда /get_prices позволит тебе получить минимальные цена на газ!")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет! Бот позволит тебе получить актуальные и минимальные цена на газ!")
 			msg.ReplyMarkup = numericKeyboard
 
 			if _, err = bot.Send(msg); err != nil {
