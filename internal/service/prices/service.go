@@ -58,7 +58,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 
 	go func() {
 		for {
-			hour, _, _ := time.Now().In(s.location).Clock()
+			hour := time.Now().In(s.location).Hour()
 
 			if hour == 1 && cleared == false {
 				err := s.repository.ClearData()
@@ -67,7 +67,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 					return
 				}
 
-				fmt.Println("cleared")
+				fmt.Printf("cleared in %s\n", time.Now().In(s.location))
 				cleared = true
 			}
 
@@ -83,7 +83,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 				prevHour = hour
 				curMinimalPrice = math.MaxInt32
 
-				if cleared {
+				if cleared && hour != 1 {
 					cleared = false
 				}
 			}
@@ -117,7 +117,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 				}
 
 				if curPrices.SafeGasPrice < curMinimalPrice {
-					curMinimalPrice = curPrices.ProposeGasPrice
+					curMinimalPrice = curPrices.SafeGasPrice
 				}
 			}
 		}
