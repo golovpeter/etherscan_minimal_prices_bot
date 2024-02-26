@@ -57,8 +57,7 @@ func main() {
 
 	errCh := getPricesService.GetNewPrices(config.ApiToken)
 	go func() {
-		<-errCh
-		log.Println(err)
+		log.Println(<-errCh)
 		return
 	}()
 
