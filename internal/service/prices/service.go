@@ -93,9 +93,9 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 				reqPrices, err := getRequest(apiKey)
 				if err != nil {
 					errCh <- err
-					return
+					//return
+					continue
 				}
-
 				curPrices, err := common.ConvertPrices(
 					reqPrices.SafeGasPrice,
 					reqPrices.ProposeGasPrice,
