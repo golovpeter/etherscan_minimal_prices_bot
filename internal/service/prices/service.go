@@ -94,7 +94,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 				if err != nil {
 					errCh <- err
 					//return
-					continue
+					break
 				}
 				curPrices, err := common.ConvertPrices(
 					reqPrices.SafeGasPrice,
@@ -103,7 +103,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 				)
 				if err != nil {
 					errCh <- err
-					return
+					break
 				}
 
 				err = s.repository.UpdateCurrentPrices(&prices.CurPrices{
@@ -113,7 +113,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 				})
 				if err != nil {
 					errCh <- err
-					return
+					break
 				}
 
 				if curPrices.SafeGasPrice < curMinimalPrice {
