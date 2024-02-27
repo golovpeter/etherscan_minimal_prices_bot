@@ -48,9 +48,9 @@ func (s *service) GetCurrentPrices() (*CurPrices, error) {
 	}, nil
 }
 
-func (s *service) GetNewPrices(apiKey string) chan error {
+func (s *service) GetNewPrices(apiKey string) chan string {
 	cleared := false
-	errCh := make(chan error)
+	errCh := make(chan string)
 
 	curMinimalPrice := math.MaxInt32
 	ticker := time.NewTicker(tickTime)
@@ -63,7 +63,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 			if hour == 1 && cleared == false {
 				err := s.repository.ClearData()
 				if err != nil {
-					errCh <- err
+					errCh <- fmt.Sprintf("failed clear data: %s", err.Error())
 					return
 				}
 
@@ -76,7 +76,7 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 					MinimalPriceInHour: curMinimalPrice,
 				})
 				if err != nil {
-					errCh <- err
+					errCh <- fmt.Sprintf("failed update prices: %s", err.Error())
 					return
 				}
 
@@ -92,9 +92,8 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 			case <-ticker.C:
 				reqPrices, err := getRequest(apiKey)
 				if err != nil {
-					errCh <- err
-					//return
-					break
+					errCh <- fmt.Sprintf("failed send request: %s", err.Error())
+					return
 				}
 				curPrices, err := common.ConvertPrices(
 					reqPrices.SafeGasPrice,
@@ -102,8 +101,8 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 					reqPrices.FastGasPrice,
 				)
 				if err != nil {
-					errCh <- err
-					break
+					errCh <- fmt.Sprintf("failed convert prices: %s", err.Error())
+					return
 				}
 
 				err = s.repository.UpdateCurrentPrices(&prices.CurPrices{
@@ -112,8 +111,8 @@ func (s *service) GetNewPrices(apiKey string) chan error {
 					FastGasPrice:    curPrices.FastGasPrice,
 				})
 				if err != nil {
-					errCh <- err
-					break
+					errCh <- fmt.Sprintf("failed update current prices: %s", err.Error())
+					return
 				}
 
 				if curPrices.SafeGasPrice < curMinimalPrice {
