@@ -6,6 +6,7 @@ import (
 	"etherscan_gastracker/internal/repository/prices"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"time"
@@ -139,6 +140,7 @@ func getRequest(apiKey string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println(string(body))
 
 	err = json.Unmarshal(body, &in)
 	if err != nil {
