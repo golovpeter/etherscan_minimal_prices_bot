@@ -6,7 +6,6 @@ import (
 	"etherscan_gastracker/internal/repository/prices"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"time"
@@ -58,6 +57,8 @@ func (s *service) GetNewPrices(apiKey string) chan string {
 	prevHour := time.Now().In(s.location).Hour()
 
 	go func() {
+		defer ticker.Stop()
+
 		for {
 			hour := time.Now().In(s.location).Hour()
 
@@ -94,8 +95,9 @@ func (s *service) GetNewPrices(apiKey string) chan string {
 				reqPrices, err := getRequest(apiKey)
 				if err != nil {
 					errCh <- fmt.Sprintf("failed send request: %s", err.Error())
-					return
+					break
 				}
+
 				curPrices, err := common.ConvertPrices(
 					reqPrices.SafeGasPrice,
 					reqPrices.ProposeGasPrice,
@@ -140,7 +142,6 @@ func getRequest(apiKey string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println(string(body))
 
 	err = json.Unmarshal(body, &in)
 	if err != nil {

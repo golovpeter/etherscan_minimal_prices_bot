@@ -58,7 +58,6 @@ func main() {
 	errCh := getPricesService.GetNewPrices(config.ApiToken)
 	go func() {
 		log.Println(<-errCh)
-		return
 	}()
 
 	getPricesHandler := get_day_prices.NewHandler(getPricesService, location)
