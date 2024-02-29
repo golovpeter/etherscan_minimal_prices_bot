@@ -6,6 +6,7 @@ import (
 	"etherscan_gastracker/internal/repository/prices"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"time"
@@ -78,8 +79,10 @@ func (s *service) GetNewPrices(apiKey string) chan string {
 					MinimalPriceInHour: curMinimalPrice,
 				})
 				if err != nil {
-					errCh <- fmt.Sprintf("failed update prices: %s", err.Error())
-					return
+					log.Println(err)
+					continue
+					//errCh <- fmt.Sprintf("failed update prices: %s", err.Error())
+					//return
 				}
 
 				prevHour = hour
