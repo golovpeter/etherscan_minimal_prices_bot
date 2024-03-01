@@ -55,10 +55,7 @@ func main() {
 
 	getPricesService := prices.NewService(pricesRepository, location)
 
-	errCh := getPricesService.GetNewPrices(config.ApiToken)
-	go func() {
-		log.Println(<-errCh)
-	}()
+	getPricesService.GetNewPrices(config.ApiToken)
 
 	getPricesHandler := get_day_prices.NewHandler(getPricesService, location)
 	currentPricesHandler := get_current_prices.NewHandler(getPricesService, location)
